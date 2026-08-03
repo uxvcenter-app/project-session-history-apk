@@ -1,0 +1,202 @@
+Session History
+Guide court d'installation et d'exécution sur téléphone
+Flutter - ASP.NET Core - SQLite - Android - iOS
+1. Technologies et versions utilisées
+Technologie	Version du projet	Rôle
+Flutter	3.44.5 stable	Application mobile
+Dart	3.12.2	Langage Flutter
+DevTools	2.57.0	Débogage Flutter
+ASP.NET Core	.NET 8 cible	Backend REST API
+.NET SDK installé	9.0.306	SDK visible sur le PC d’origine
+SQLite	Base locale	Stockage des données
+Android / iOS	Téléphone et émulateur	Plateformes cibles
+
+Liens d’installation :
+•	Flutter : https://docs.flutter.dev/install
+•	Dart : https://dart.dev/get-dart
+•	Asp.net 8 : https://dotnet.microsoft.com/download/dotnet/8.0
+Important : Dart est déjà inclus dans Flutter. Pour iOS, un Mac avec Xcode est obligatoire.
+2. Frontend Flutter - commandes principales
+cd C:\Users\HP\Downloads\project-session-history-apk-main\project-session-history-apk-main\session_history_app
+flutter --version
+dart --version
+flutter doctor -v
+flutter pub get
+flutter analyze
+flutter devices
+En cas de problème de cache :
+flutter clean
+flutter pub get
+3. Backend ASP.NET Core - commandes principales
+cd C:\Users\HP\Downloads\project-session-history-apk-main\project-session-history-apk-main\SessionHistoryApiii\SessionHistoryApi
+dotnet --version
+dotnet restore
+dotnet build
+dotnet run 
+Pour un téléphone physique sur le même Wi-Fi :
+dotnet run --urls "http://0.0.0.0:5080"
+Test du backend dans le navigateur : http://localhost:5080/swagger
+4. Exécuter sur Android Emulator
+1.	Ouvrir Android Studio.
+2.	Aller dans Tools > Device Manager.
+3.	Créer un appareil virtuel puis choisir une image Android.
+4.	Démarrer l’émulateur avec le bouton ▶.
+5.	Démarrer le backend sur http://localhost:5080.
+6.	Dans Flutter, utiliser comme adresse API : http://10.0.2.2:5080.
+7.	Lancer les commandes ci-dessous.
+flutter devices
+flutter run 
+5. Exécuter sur un téléphone Android
+8.	Sur le téléphone, activer Options développeur puis Débogage USB.
+9.	Brancher le téléphone au PC et accepter l’autorisation USB.
+10.	Vérifier que le téléphone est détecté.
+11.	Démarrer le backend avec l’adresse 0.0.0.0.
+12.	Avec ipconfig, récupérer l’adresse IPv4 du PC.
+13.	Mettre dans Flutter : http://IP_DU_PC:5080.
+14.	Le PC et le téléphone doivent être sur le même Wi-Fi.
+15.	Lancer l’application.
+adb devices
+ipconfig
+flutter devices
+flutter run 
+Installation automatique : la commande flutter run installe directement l’application de test sur le téléphone.
+6. Exécuter sur iOS Simulator
+16.	Utiliser un Mac. iOS Simulator ne fonctionne pas sous Windows.
+17.	Installer Flutter, .NET 8 et Xcode.
+18.	Cloner le projet sur le Mac.
+19.	Démarrer le backend sur http://localhost:5080.
+20.	Ouvrir le simulateur iOS.
+21.	Utiliser comme adresse API : http://127.0.0.1:5080.
+22.	Lancer Flutter.
+cd C:\Users\HP\Downloads\project-session-history-apk-main\project-session-history-apk-main\SessionHistoryApiii\SessionHistoryApi
+dotnet restore
+dotnet run 
+
+cd C:\Users\HP\Downloads\project-session-history-apk-main\project-session-history-apk-main\session_history_app
+flutter pub get
+open -a Simulator
+flutter devices
+flutter run 
+7. Exécuter sur un iPhone physique
+23.	Brancher l’iPhone au Mac et accepter Faire confiance.
+24.	Activer le Mode développeur sur l’iPhone.
+25.	Ouvrir ios/Runner.xcworkspace dans Xcode.
+26.	Dans Signing & Capabilities, choisir une équipe Apple.
+27.	Démarrer le backend sur 0.0.0.0:5080.
+28.	Trouver l’IP du Mac et mettre dans Flutter : http://IP_DU_MAC:5080.
+29.	Le Mac et l’iPhone doivent être sur le même Wi-Fi.
+30.	Lancer l’application.
+cd C:\Users\HP\Downloads\project-session-history-apk-main\project-session-history-apk-main\SessionHistoryApiii\SessionHistoryApi
+dotnet run 
+
+ipconfig getifaddr en0
+cd C:\Users\HP\Downloads\project-session-history-apk-main\project-session-history-apk-main\session_history_app
+flutter devices
+flutter run 
+Créer le fichier iOS :
+flutter build ipa --release
+Pour installer sur un iPhone, utiliser Xcode ou TestFlight. La compilation iOS doit être faite sur un Mac.
+8. Ordre de démarrage quotidien
+•	Terminal 1 : démarrer le backend avec dotnet run.
+•	Terminal 2 : démarrer l’émulateur ou connecter le téléphone.
+•	Terminal 3 : exécuter flutter devices puis flutter run -d <ID>.
+Résumé réseau : Android Emulator = 10.0.2.2 ;
+ iOS Simulator = 127.0.0.1 ; 
+Téléphone physique = adresse IP du PC/Mac.
+9. Se Connecter  Application 
+Email: test10@gmail.com
+Password:TEST100
+Xcode est le logiciel officiel d’Apple pour créer, compiler, tester et publier des applications pour :
+•	iPhone et iPad ; 
+•	macOS ; 
+•	Apple Watch ; 
+•	Apple TV. 
+Dans ton projet Flutter, Xcode sert surtout pour la partie iOS.
+Avec Xcode, tu peux :
+•	démarrer un simulateur iPhone ; 
+•	compiler l’application Flutter pour iOS ; 
+•	connecter et tester l’application sur un vrai iPhone ; 
+•	configurer la signature Apple ; 
+•	générer le fichier iOS pour la publication sur l’App Store. 
+
+Point important
+Xcode fonctionne uniquement sur macOS. Il ne peut pas être installé sur Windows.
+Donc :
+Windows → Android Emulator et téléphone Android
+Mac → Android + iOS Simulator + iPhone physique
+Pour lancer ton projet Flutter sur iOS depuis un Mac :
+flutter doctor
+open -a Simulator
+flutter devices
+flutter run
+Sur Windows, tu peux développer toute l’application Flutter, mais pour compiler et tester la version iOS, il faut transférer le projet vers un Mac équipé de Xcode.
+
+
+Flutter 3.44.5
+Dart 3.12.2
+DevTools 2.57.0
+Les commandes suivantes sont reconnues :
+flutter --version
+dart --version
+Voici néanmoins toute la procédure depuis le fichier ZIP.
+1. Extraire le fichier ZIP de Flutter
+Crée un dossier simple :
+C:\src
+Extrais le fichier ZIP afin d’obtenir :
+C:\src\flutter
+Tu dois trouver ce fichier :
+C:\src\flutter\bin\flutter.bat
+Évite de placer Flutter dans :
+C:\Program Files
+C:\Windows
+OneDrive
+Un chemin court comme C:\src\flutter réduit les problèmes de permissions et de chemins trop longs sous Windows. 
+2. Ajouter Flutter à la variable Path
+Appuie sur :
+Windows + R
+Écris :
+sysdm.cpl
+Puis :
+Avancé
+> Variables d’environnement
+Dans Variables utilisateur, sélectionne :
+Path
+Clique sur :
+Modifier
+> Nouveau
+Ajoute :
+C:\src\flutter\bin
+Clique sur OK dans toutes les fenêtres.
+L’ajout du dossier flutter\bin au Path permet d’utiliser les commandes flutter et dart depuis PowerShell, CMD, Android Studio ou VS Code. 
+3. Redémarrer PowerShell
+Ferme complètement PowerShell et ouvre une nouvelle fenêtre.
+Exécute :
+flutter --version
+dart --version
+Dans ton cas, le résultat attendu est :
+Flutter 3.44.5
+Dart 3.12.2
+Flutter contient déjà Dart. Tu n’as donc pas besoin d’installer Dart séparément.
+Pour vérifier le chemin utilisé :
+where.exe flutter
+where.exe dart
+Tu dois obtenir un résultat proche de :
+C:\src\flutter\bin\flutter
+C:\src\flutter\bin\flutter.bat
+C:\src\flutter\bin\dart
+C:\src\flutter\bin\dart.bat
+4. Vérifier toute l’installation
+Exécute :
+flutter doctor -v
+Cette commande vérifie Flutter, Android Studio, le SDK Android, les appareils connectés et les autres outils nécessaires. 
+Tu peux avoir un résultat semblable à :
+[✓] Flutter
+[✓] Windows Version
+[!] Android toolchain
+[✓] Android Studio
+[✓] Connected device
+Les éléments marqués [!] doivent être corrigés uniquement s’ils concernent la plateforme que tu veux utiliser.
+Par exemple, l’avertissement Visual Studio peut être ignoré lorsque tu développes uniquement pour Android. Visual Studio est nécessaire pour créer une application Flutter Windows Desktop, pas pour Android
+
+
+
