@@ -70,7 +70,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 width: 72,
                 height: 72,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Icon(Icons.mark_email_read_outlined, color: AppColors.primary, size: 34),

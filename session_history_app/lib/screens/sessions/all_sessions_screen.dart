@@ -73,7 +73,7 @@ class _AllSessionsScreenState extends State<AllSessionsScreen> {
                     child: ChoiceChip(
                       label: Text(c.name),
                       selected: selected,
-                      selectedColor: c.color.withOpacity(0.2),
+                      selectedColor: c.color.withValues(alpha: 0.2),
                       onSelected: (_) {
                         setState(() => _selectedCategory = c.id);
                         context.read<SessionProvider>().setFilter(SessionFilter.category, category: c.id);
@@ -117,7 +117,7 @@ class _AllSessionsScreenState extends State<AllSessionsScreen> {
     return ChoiceChip(
       label: Text(label),
       selected: selected,
-      selectedColor: AppColors.primary.withOpacity(0.15),
+      selectedColor: AppColors.primary.withValues(alpha: 0.15),
       labelStyle: TextStyle(color: selected ? AppColors.primary : AppColors.textSecondary),
       onSelected: (_) => _applyTab(index),
     );

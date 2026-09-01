@@ -62,7 +62,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   width: 96,
                   height: 96,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(24),
                   ),
                   child: const Icon(Icons.auto_stories_rounded, color: Colors.white, size: 46),
@@ -80,7 +80,7 @@ class _SplashScreenState extends State<SplashScreen> {
               const SizedBox(height: 8),
               Text(
                 'Your notes. Your history.',
-                style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
               ),
               const SizedBox(height: 40),
               const SizedBox(

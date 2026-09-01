@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'core/messaging/app_messenger.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/session_provider.dart';
 import 'providers/theme_provider.dart';
 import 'screens/auth/splash_screen.dart';
+import 'services/notification_service.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService.instance.initialize();
   runApp(const SessionHistoryApp());
 }
 
@@ -40,6 +44,7 @@ class _SessionHistoryAppState extends State<SessionHistoryApp> {
           return MaterialApp(
             title: 'Session History',
             debugShowCheckedModeBanner: false,
+            scaffoldMessengerKey: appMessengerKey,
             theme: AppTheme.light(),
             darkTheme: AppTheme.dark(),
             themeMode: themeProvider.themeMode,

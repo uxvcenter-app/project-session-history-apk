@@ -12,9 +12,9 @@ class CategoryBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: category.color.withOpacity(0.12),
+        color: category.color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: category.color.withOpacity(0.35)),
+        border: Border.all(color: category.color.withValues(alpha: 0.35)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -26,7 +26,7 @@ class CategoryBadge extends StatelessWidget {
             style: TextStyle(color: category.color, fontWeight: FontWeight.w700, fontSize: 14),
           ),
           const SizedBox(width: 6),
-          Icon(Icons.auto_awesome, color: category.color.withOpacity(0.6), size: 14),
+          Icon(Icons.auto_awesome, color: category.color.withValues(alpha: 0.6), size: 14),
         ],
       ),
     );

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import '../core/messaging/app_messenger.dart';
 import '../models/session_model.dart';
 import '../services/api_service.dart';
 import '../services/ai_service.dart';
+import '../services/notification_service.dart';
 
 enum SessionFilter { all, favorites, category }
 
@@ -11,6 +13,7 @@ enum SessionFilter { all, favorites, category }
 /// au backend pour être stockées avec la session.
 class SessionProvider extends ChangeNotifier {
   final _api = ApiService.instance;
+  final _notifications = NotificationService.instance;
 
   List<SessionModel> _sessions = [];
   List<SessionModel> _filtered = [];
@@ -37,9 +40,17 @@ class SessionProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final json = await _api.getSessions();
-      _sessions = json.map((e) => SessionModel.fromApiJson(e as Map<String, dynamic>)).toList();
+      _sessions = json
+          .map((e) => SessionModel.fromApiJson(e as Map<String, dynamic>))
+          .toList();
       _errorMessage = null;
       _applyFilters();
+
+      // Ne bloque jamais le chargement de l'application si le système
+      // de notifications rencontre un problème.
+      try {
+        await _notifications.syncSessionReminders(_sessions);
+      } catch (_) {}
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
@@ -74,8 +85,23 @@ class SessionProvider extends ChangeNotifier {
     );
 
     try {
-      await _api.createSession(draft.toApiJson());
+      final createdJson = await _api.createSession(draft.toApiJson());
+      final created = SessionModel.fromApiJson(createdJson);
+
       await loadSessions();
+
+      // Confirmation affichée dans l'application (pas de notification
+      // système) : seul le rappel programmé ci-dessous en est une.
+      try {
+        showAppMessage('« ${created.title} » a été ajoutée avec succès.');
+      } catch (_) {}
+      try {
+        await _notifications.scheduleSessionReminder(
+          created,
+          requestExactPermission: true,
+        );
+      } catch (_) {}
+
       return true;
     } catch (e) {
       _errorMessage = e.toString();
@@ -87,11 +113,23 @@ class SessionProvider extends ChangeNotifier {
   Future<bool> updateSession(SessionModel session) async {
     final keywords = AiService.extractKeywords(session.content);
     final summary = AiService.generateSummary(session.content);
-    final updated = session.copyWith(autoKeywords: keywords, autoSummary: summary);
+    final updated =
+        session.copyWith(autoKeywords: keywords, autoSummary: summary);
 
     try {
-      await _api.updateSession(session.id, updated.toApiJson());
+      final updatedJson =
+          await _api.updateSession(session.id, updated.toApiJson());
+      final saved = SessionModel.fromApiJson(updatedJson);
       await loadSessions();
+
+      // Le même id de notification remplace automatiquement l'ancien rappel.
+      try {
+        await _notifications.scheduleSessionReminder(
+          saved,
+          requestExactPermission: true,
+        );
+      } catch (_) {}
+
       return true;
     } catch (e) {
       _errorMessage = e.toString();
@@ -101,8 +139,30 @@ class SessionProvider extends ChangeNotifier {
   }
 
   Future<bool> deleteSession(String id) async {
+    SessionModel? deletedSession;
+    for (final session in _sessions) {
+      if (session.id == id) {
+        deletedSession = session;
+        break;
+      }
+    }
+
     try {
       await _api.deleteSession(id);
+
+      // Le rappel ne doit plus sonner après suppression.
+      try {
+        await _notifications.cancelSessionReminder(id);
+      } catch (_) {}
+
+      // Confirmation affichée dans l'application (pas de notification
+      // système).
+      if (deletedSession != null) {
+        try {
+          showAppMessage('« ${deletedSession.title} » a été supprimée.');
+        } catch (_) {}
+      }
+
       await loadSessions();
       return true;
     } catch (e) {
@@ -141,8 +201,10 @@ class SessionProvider extends ChangeNotifier {
 
     if (_filter == SessionFilter.favorites) {
       result = result.where((s) => s.isFavorite).toList();
-    } else if (_filter == SessionFilter.category && _selectedCategory != null) {
-      result = result.where((s) => s.category == _selectedCategory).toList();
+    } else if (_filter == SessionFilter.category &&
+        _selectedCategory != null) {
+      result =
+          result.where((s) => s.category == _selectedCategory).toList();
     }
 
     if (_searchQuery.trim().isNotEmpty) {
@@ -176,7 +238,8 @@ class SessionProvider extends ChangeNotifier {
     final now = DateTime.now();
     final counts = List<int>.filled(7, 0);
     for (int i = 0; i < 7; i++) {
-      final day = DateTime(now.year, now.month, now.day).subtract(Duration(days: 6 - i));
+      final day = DateTime(now.year, now.month, now.day)
+          .subtract(Duration(days: 6 - i));
       counts[i] = _sessions
           .where((s) =>
               s.date.year == day.year &&

@@ -1,0 +1,30 @@
+﻿# Flutter
+**/.dart_tool/
+**/build/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/pubspec.lock
+
+# Android
+**/.gradle/
+**/local.properties/
+**/captures/
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# ASP.NET / .NET
+**/bin/
+**/obj/
+
+# Visual Studio
+.vs/
+
+# OS
+.DS_Store
+Thumbs.db
+**/local.properties

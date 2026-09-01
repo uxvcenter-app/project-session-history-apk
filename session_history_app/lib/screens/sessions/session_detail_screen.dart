@@ -17,20 +17,32 @@ class SessionDetailScreen extends StatelessWidget {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Supprimer la session ?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Supprimer la session ?', style: TextStyle(fontWeight: FontWeight.w700)),
         content: const Text('Cette action est irréversible.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Supprimer', style: TextStyle(color: AppColors.error)),
+            child: const Text('Supprimer', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
     );
     if (confirm == true && context.mounted) {
-      await context.read<SessionProvider>().deleteSession(session.id);
-      if (context.mounted) Navigator.of(context).pop();
+      final provider = context.read<SessionProvider>();
+      final success = await provider.deleteSession(session.id);
+      if (!context.mounted) return;
+
+      if (success) {
+        Navigator.of(context).pop();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(provider.errorMessage ?? 'Impossible de supprimer la session'),
+          ),
+        );
+      }
     }
   }
 
@@ -43,93 +55,135 @@ class SessionDetailScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Session Detail'),
+        elevation: 0,
+        title: const Text('Session Detail', style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
+          _appBarIconButton(
+            icon: Icons.edit_outlined,
             onPressed: () => Navigator.of(context).push(
               AppRoute(EditSessionScreen(session: session)),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
+          _appBarIconButton(
+            icon: Icons.delete_outline_rounded,
             onPressed: () => _confirmDelete(context),
+            color: Colors.redAccent.shade100,
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(session.title,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
-              ),
-              Icon(
-                session.isFavorite ? Icons.star : Icons.star_border,
-                color: session.isFavorite ? AppColors.star : AppColors.textSecondary,
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: category.color.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(20),
+          // En-tête : titre + catégorie + date, dans une carte
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.035), blurRadius: 14, offset: const Offset(0, 6)),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(session.title,
+                          style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: (session.isFavorite ? AppColors.star : AppColors.textSecondary).withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        session.isFavorite ? Icons.star_rounded : Icons.star_border_rounded,
+                        size: 19,
+                        color: session.isFavorite ? AppColors.star : AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
-                child: Text(category.name,
-                    style: TextStyle(color: category.color, fontSize: 12, fontWeight: FontWeight.w600)),
-              ),
-              const SizedBox(width: 10),
-              Text('$dateStr · ${session.time}', style: TextStyle(color: AppColors.textSecondary)),
-            ],
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: category.color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(category.name,
+                          style: TextStyle(color: category.color, fontSize: 12, fontWeight: FontWeight.w700)),
+                    ),
+                    const SizedBox(width: 10),
+                    Icon(Icons.schedule_rounded, size: 14, color: AppColors.textSecondary),
+                    const SizedBox(width: 4),
+                    Text('$dateStr · ${session.time}',
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 12.5, fontWeight: FontWeight.w500)),
+                  ],
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           if (session.autoSummary != null && session.autoSummary!.trim().isNotEmpty) ...[
-            _sectionTitle('Résumé automatique (IA)'),
+            _sectionTitle('Résumé automatique (IA)', icon: Icons.auto_awesome_rounded),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.06),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.primary.withOpacity(0.15)),
+                color: AppColors.primary.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
               ),
-              child: Text(session.autoSummary!, style: const TextStyle(height: 1.4)),
+              child: Text(session.autoSummary!, style: const TextStyle(height: 1.5, fontSize: 13.5)),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 22),
           ],
 
           _sectionTitle('Content'),
-          Text(session.content, style: const TextStyle(height: 1.5)),
-          const SizedBox(height: 20),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
+              ],
+            ),
+            child: Text(session.content, style: const TextStyle(height: 1.6, fontSize: 14)),
+          ),
+          const SizedBox(height: 22),
 
           if (session.tags.isNotEmpty) ...[
-            _sectionTitle('Tags'),
+            _sectionTitle('Tags', icon: Icons.label_outline_rounded),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: session.tags.map((t) => Chip(label: Text(t))).toList(),
+              children: session.tags.map((t) => _tagChip(t)).toList(),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 22),
           ],
 
           if (session.autoKeywords != null && session.autoKeywords!.isNotEmpty) ...[
-            _sectionTitle('Mots-clés détectés (IA)'),
+            _sectionTitle('Mots-clés détectés (IA)', icon: Icons.auto_awesome_rounded),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: session.autoKeywords!
-                  .map((k) => Chip(
-                        label: Text(k),
-                        backgroundColor: AppColors.primary.withOpacity(0.08),
-                        labelStyle: const TextStyle(color: AppColors.primary),
-                      ))
+                  .map((k) => _tagChip(k, tint: AppColors.primary))
                   .toList(),
             ),
           ],
@@ -138,8 +192,44 @@ class SessionDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _sectionTitle(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Text(text, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-      );
+  Widget _appBarIconButton({required IconData icon, required VoidCallback onPressed, Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: IconButton(
+        icon: Icon(icon, size: 21, color: color),
+        onPressed: onPressed,
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String text, {IconData? icon}) => Padding(
+    padding: const EdgeInsets.only(bottom: 10),
+    child: Row(
+      children: [
+        if (icon != null) ...[
+          Icon(icon, size: 15, color: AppColors.primary),
+          const SizedBox(width: 6),
+        ],
+        Text(text, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, letterSpacing: -0.1)),
+      ],
+    ),
+  );
+
+  Widget _tagChip(String label, {Color? tint}) {
+    final color = tint ?? AppColors.textSecondary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: tint != null ? color.withOpacity(0.08) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: tint != null ? color.withOpacity(0.2) : AppColors.textSecondary.withOpacity(0.15),
+        ),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: tint != null ? color : Colors.black87),
+      ),
+    );
+  }
 }

@@ -3,6 +3,7 @@ import '../../providers/theme_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/time_format.dart';
 import '../../models/category_model.dart';
 import '../../models/session_model.dart';
 import '../../providers/session_provider.dart';
@@ -35,8 +36,39 @@ class _EditSessionScreenState extends State<EditSessionScreen> {
     _tagsController = TextEditingController(text: s.tags.join(', '));
     _category = s.category;
     _date = s.date;
-    final parts = s.time.split(':');
-    _time = TimeOfDay(hour: int.tryParse(parts.first) ?? 0, minute: 0);
+    _time = _parseStoredTime(s.time);
+  }
+
+
+  TimeOfDay _parseStoredTime(String value) {
+    final raw = value.trim().toUpperCase();
+
+    final twelveHour =
+        RegExp(r'^(\d{1,2}):(\d{2})\s*(AM|PM)$').firstMatch(raw);
+    if (twelveHour != null) {
+      var hour = int.tryParse(twelveHour.group(1)!) ?? 0;
+      final minute = int.tryParse(twelveHour.group(2)!) ?? 0;
+      final period = twelveHour.group(3)!;
+      if (period == 'AM' && hour == 12) hour = 0;
+      if (period == 'PM' && hour != 12) hour += 12;
+      return TimeOfDay(
+        hour: hour.clamp(0, 23).toInt(),
+        minute: minute.clamp(0, 59).toInt(),
+      );
+    }
+
+    final twentyFourHour =
+        RegExp(r'^(\d{1,2}):(\d{2})$').firstMatch(raw);
+    if (twentyFourHour != null) {
+      final hour = int.tryParse(twentyFourHour.group(1)!) ?? 0;
+      final minute = int.tryParse(twentyFourHour.group(2)!) ?? 0;
+      return TimeOfDay(
+        hour: hour.clamp(0, 23).toInt(),
+        minute: minute.clamp(0, 59).toInt(),
+      );
+    }
+
+    return TimeOfDay.now();
   }
 
   Future<void> _pickDate() async {
@@ -50,7 +82,11 @@ class _EditSessionScreenState extends State<EditSessionScreen> {
   }
 
   Future<void> _pickTime() async {
-    final picked = await showTimePicker(context: context, initialTime: _time);
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _time,
+      builder: force24HourTimePicker,
+    );
     if (picked != null) setState(() => _time = picked);
   }
 
@@ -68,7 +104,7 @@ class _EditSessionScreenState extends State<EditSessionScreen> {
       title: _titleController.text.trim(),
       category: _category,
       date: _date,
-      time: _time.format(context),
+      time: formatTime24(_time),
       content: _contentController.text.trim(),
       tags: tags,
     );
@@ -121,7 +157,7 @@ class _EditSessionScreenState extends State<EditSessionScreen> {
             const Text('Category', style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: _category,
+              initialValue: _category,
               items: CategoryModel.defaults
                   .map((c) => DropdownMenuItem(
                         value: c.id,
@@ -165,7 +201,7 @@ class _EditSessionScreenState extends State<EditSessionScreen> {
                         onTap: _pickTime,
                         child: InputDecorator(
                           decoration: const InputDecoration(),
-                          child: Text(_time.format(context)),
+                          child: Text(formatTime24(_time)),
                         ),
                       ),
                     ],

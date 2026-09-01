@@ -36,7 +36,7 @@ class SessionCard extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: category.color.withOpacity(0.15),
+                  color: category.color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(category.icon, color: category.color, size: 20),
@@ -72,7 +72,7 @@ class SessionCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: category.color.withOpacity(0.12),
+                    color: category.color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(

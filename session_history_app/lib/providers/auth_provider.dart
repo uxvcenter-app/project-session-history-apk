@@ -8,7 +8,22 @@ class CurrentUser {
   final String id;
   final String fullName;
   final String email;
-  CurrentUser({required this.id, required this.fullName, required this.email});
+  /// Chemin local de la photo de profil (stockée sur l'appareil, pas sur
+  /// le backend). Null tant que l'utilisateur n'en a pas choisi une.
+  final String? photoPath;
+  CurrentUser({
+    required this.id,
+    required this.fullName,
+    required this.email,
+    this.photoPath,
+  });
+
+  CurrentUser copyWith({String? photoPath}) => CurrentUser(
+        id: id,
+        fullName: fullName,
+        email: email,
+        photoPath: photoPath ?? this.photoPath,
+      );
 }
 
 /// Gère l'authentification via le backend ASP.NET Core :
@@ -17,6 +32,7 @@ class CurrentUser {
 class AuthProvider extends ChangeNotifier {
   final _api = ApiService.instance;
   static const _profileKey = 'current_user_profile';
+  static const _photoKey = '${_profileKey}_photo';
 
   CurrentUser? _currentUser;
   bool _isLoading = false;
@@ -37,8 +53,9 @@ class AuthProvider extends ChangeNotifier {
     final id = prefs.getString('${_profileKey}_id');
     final name = prefs.getString('${_profileKey}_name');
     final email = prefs.getString('${_profileKey}_email');
+    final photoPath = prefs.getString(_photoKey);
     if (id != null && name != null && email != null) {
-      _currentUser = CurrentUser(id: id, fullName: name, email: email);
+      _currentUser = CurrentUser(id: id, fullName: name, email: email, photoPath: photoPath);
       notifyListeners();
     }
   }
@@ -48,6 +65,9 @@ class AuthProvider extends ChangeNotifier {
     await prefs.setString('${_profileKey}_id', user.id);
     await prefs.setString('${_profileKey}_name', user.fullName);
     await prefs.setString('${_profileKey}_email', user.email);
+    if (user.photoPath != null) {
+      await prefs.setString(_photoKey, user.photoPath!);
+    }
   }
 
   /// Étape 1 : inscription -> envoie le code par email, ne connecte pas encore.
@@ -72,10 +92,12 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
     try {
       final body = await _api.verifyEmail(email: pendingVerificationEmail!, code: code);
+      final prefs = await SharedPreferences.getInstance();
       _currentUser = CurrentUser(
         id: body['userId'] as String,
         fullName: body['fullName'] as String,
         email: body['email'] as String,
+        photoPath: prefs.getString(_photoKey),
       );
       await _saveProfile(_currentUser!);
       pendingVerificationEmail = null;
@@ -104,10 +126,12 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
     try {
       final body = await _api.login(email: email, password: password);
+      final prefs = await SharedPreferences.getInstance();
       _currentUser = CurrentUser(
         id: body['userId'] as String,
         fullName: body['fullName'] as String,
         email: body['email'] as String,
+        photoPath: prefs.getString(_photoKey),
       );
       await _saveProfile(_currentUser!);
       _errorMessage = null;
@@ -126,12 +150,23 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Enregistre la nouvelle photo de profil (déjà copiée sur le disque par
+  /// AvatarService) et notifie l'UI.
+  Future<void> updateAvatarPath(String path) async {
+    if (_currentUser == null) return;
+    _currentUser = _currentUser!.copyWith(photoPath: path);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_photoKey, path);
+    notifyListeners();
+  }
+
   Future<void> logout() async {
     await _api.logout();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('${_profileKey}_id');
     await prefs.remove('${_profileKey}_name');
     await prefs.remove('${_profileKey}_email');
+    await prefs.remove(_photoKey);
     _currentUser = null;
     notifyListeners();
   }

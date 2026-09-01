@@ -43,7 +43,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               leading: Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(color: c.color.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
+                decoration: BoxDecoration(color: c.color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
                 child: Icon(c.icon, color: c.color),
               ),
               title: Text(c.name, style: const TextStyle(fontWeight: FontWeight.w600)),
