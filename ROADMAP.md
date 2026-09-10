@@ -28,7 +28,7 @@
 ## 📥 Installation des Outils
 
 ### 1️⃣ Flutter
-**Lien officiel:** https://docs.flutter.dev/install
+**Lien officiel:** https://docs.flutter.dev/install/manual
 
 ```bash
 # Vérifier l'installation
