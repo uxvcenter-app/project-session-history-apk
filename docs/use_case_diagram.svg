@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1050" viewBox="0 0 1600 1050">
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0 0l10 3-10 3z" fill="#555"/></marker><style>
+text{font-family:Arial,Segoe UI,sans-serif;fill:#222}.title{font-size:25px;font-weight:bold}.sub{font-size:13px;fill:#666}.head{font-size:18px;font-weight:bold}.actor{font-size:14px;font-weight:bold}.uc{fill:#fff;stroke:#444;stroke-width:1.5}.boundary{fill:#f8fbff;stroke:#555;stroke-width:1.5}.assoc{stroke:#555;stroke-width:1.4;fill:none}.inc{stroke:#555;stroke-width:1.2;fill:none;stroke-dasharray:7 5;marker-end:url(#arrow)}.label{font-size:12px;fill:#555}.legend{font-size:12px;fill:#444}
+</style></defs>
+<rect width="1600" height="1050" fill="white"/>
+<text x="45" y="40" class="title">Diagramme de cas d'utilisation - Session History</text>
+<text x="45" y="64" class="sub">Fonctionnalites principales de l'application mobile et de son backend</text>
+
+<rect x="260" y="95" width="1080" height="850" rx="8" class="boundary"/>
+<text x="285" y="128" class="head">Systeme Session History</text>
+
+<!-- actor user -->
+<g transform="translate(92 435)"><circle cx="0" cy="-28" r="18" fill="white" stroke="#333" stroke-width="2"/><path d="M0 -10v45M-25 5h50M0 35l-22 30M0 35l22 30" stroke="#333" stroke-width="2" fill="none"/><text x="-48" y="88" class="actor">Utilisateur</text></g>
+<!-- actor email -->
+<g transform="translate(1470 300)"><circle cx="0" cy="-28" r="18" fill="white" stroke="#333" stroke-width="2"/><path d="M0 -10v45M-25 5h50M0 35l-22 30M0 35l22 30" stroke="#333" stroke-width="2" fill="none"/><text x="-65" y="88" class="actor">Service Email</text></g>
+<!-- actor notification -->
+<g transform="translate(1470 720)"><circle cx="0" cy="-28" r="18" fill="white" stroke="#333" stroke-width="2"/><path d="M0 -10v45M-25 5h50M0 35l-22 30M0 35l22 30" stroke="#333" stroke-width="2" fill="none"/><text x="-92" y="88" class="actor">Notifications</text></g>
+
+<!-- use cases -->
+<g class="uc"><ellipse cx="440" cy="190" rx="125" ry="35"/><ellipse cx="710" cy="190" rx="125" ry="35"/><ellipse cx="980" cy="190" rx="125" ry="35"/><ellipse cx="1210" cy="190" rx="105" ry="35"/>
+<ellipse cx="440" cy="315" rx="125" ry="35"/><ellipse cx="710" cy="315" rx="125" ry="35"/><ellipse cx="980" cy="315" rx="125" ry="35"/><ellipse cx="1210" cy="315" rx="105" ry="35"/>
+<ellipse cx="440" cy="455" rx="125" ry="35"/><ellipse cx="710" cy="455" rx="125" ry="35"/><ellipse cx="980" cy="455" rx="125" ry="35"/><ellipse cx="1210" cy="455" rx="105" ry="35"/>
+<ellipse cx="440" cy="595" rx="125" ry="35"/><ellipse cx="710" cy="595" rx="125" ry="35"/><ellipse cx="980" cy="595" rx="125" ry="35"/><ellipse cx="1210" cy="595" rx="105" ry="35"/>
+<ellipse cx="580" cy="780" rx="145" ry="35"/><ellipse cx="900" cy="780" rx="145" ry="35"/><ellipse cx="1150" cy="780" rx="125" ry="35"/></g>
+<g class="label" text-anchor="middle"><text x="440" y="195">S'inscrire</text><text x="710" y="195">Verifier l'email</text><text x="980" y="195">Se connecter</text><text x="1210" y="195">Gerer le profil</text>
+<text x="440" y="320">Mot de passe oublie</text><text x="710" y="320">Ajouter une session</text><text x="980" y="320">Consulter les sessions</text><text x="1210" y="320">Modifier une session</text>
+<text x="440" y="460">Supprimer une session</text><text x="710" y="460">Rechercher</text><text x="980" y="460">Filtrer par categorie</text><text x="1210" y="460">Gerer les favoris</text>
+<text x="440" y="600">Analyser une session</text><text x="710" y="600">Generer un resume</text><text x="980" y="600">Extraire les mots-cles</text><text x="1210" y="600">Classifier la categorie</text>
+<text x="580" y="785">Importer des donnees</text><text x="900" y="785">Exporter des donnees</text><text x="1150" y="785">Programmer un rappel</text></g>
+
+<!-- user associations -->
+<path d="M115 407L330 205M115 407L585 205M115 407L855 205M115 407L1105 205M115 450L315 315M115 450L585 315M115 450L855 315M115 450L1105 315M115 480L315 455M115 480L585 455M115 480L855 455M115 480L1105 455M115 510L315 595M115 510L435 780M115 510L755 780M115 510L1025 780" class="assoc"/>
+<!-- external associations -->
+<path d="M1450 270L835 205M1450 330L315 315M1450 690L1275 780" class="assoc"/>
+<!-- include dependencies -->
+<path d="M565 315L685 225M835 315L900 225M685 350L670 420M835 350L1110 760M1175 350L1120 740M565 595L565 350M835 595L835 350M1105 595L1080 740" class="inc"/>
+<text x="610" y="267" class="label">&lt;&lt;include&gt;&gt;</text><text x="850" y="267" class="label">&lt;&lt;include&gt;&gt;</text><text x="695" y="395" class="label">&lt;&lt;include&gt;&gt;</text><text x="930" y="530" class="label">&lt;&lt;include&gt;&gt;</text><text x="1080" y="530" class="label">&lt;&lt;include&gt;&gt;</text><text x="515" y="380" class="label">&lt;&lt;include&gt;&gt;</text>
+
+<!-- legend -->
+<rect x="285" y="865" width="760" height="55" fill="white" stroke="#777"/><text x="305" y="888" class="actor">Legende</text><line x1="390" y1="884" x2="480" y2="884" class="assoc"/><text x="490" y="888" class="legend">Association acteur-cas</text><line x1="650" y1="884" x2="740" y2="884" class="inc"/><text x="750" y="888" class="legend">&lt;&lt;include&gt;&gt;</text><ellipse cx="900" cy="884" rx="45" ry="17" fill="white" stroke="#444"/><text x="960" y="888" class="legend">Cas d'utilisation</text>
+<text x="45" y="1015" class="sub">Les cas d'utilisation correspondent aux providers, services et ecrans presents dans le projet.</text>
+</svg>

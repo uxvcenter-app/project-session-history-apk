@@ -14,6 +14,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // --- Services applicatifs ---
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<JwtTokenService>();
+builder.Services.AddHttpClient<GeminiAiService>();
 
 // --- Authentification JWT ---
 var jwtKey = builder.Configuration["Jwt:Key"]!;

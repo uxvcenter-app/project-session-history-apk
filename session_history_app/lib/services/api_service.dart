@@ -57,8 +57,15 @@ class ApiService {
     return jsonDecode(utf8.decode(response.bodyBytes));
   }
 
-  void _throwIfError(http.Response response) {
+  Future<void> _throwIfError(http.Response response) async {
     if (response.statusCode >= 200 && response.statusCode < 300) return;
+    if (response.statusCode == 401) {
+      await clearToken();
+      throw ApiException(
+        'Votre session a expiré. Veuillez vous reconnecter.',
+        statusCode: 401,
+      );
+    }
     String message = 'Une erreur est survenue (${response.statusCode}).';
     try {
       final body = _decode(response);
@@ -83,9 +90,13 @@ class ApiService {
     final response = await http.post(
       _uri('/api/auth/register'),
       headers: await _headers(),
-      body: jsonEncode({'fullName': fullName, 'email': email, 'password': password}),
+      body: jsonEncode({
+        'fullName': fullName,
+        'email': email,
+        'password': password,
+      }),
     );
-    _throwIfError(response);
+    await _throwIfError(response);
     final body = _decode(response);
     return body['message'] as String;
   }
@@ -99,7 +110,7 @@ class ApiService {
       headers: await _headers(),
       body: jsonEncode({'email': email, 'code': code}),
     );
-    _throwIfError(response);
+    await _throwIfError(response);
     final body = _decode(response) as Map<String, dynamic>;
     await saveToken(body['token'] as String);
     return body;
@@ -111,7 +122,7 @@ class ApiService {
       headers: await _headers(),
       body: jsonEncode({'email': email}),
     );
-    _throwIfError(response);
+    await _throwIfError(response);
     final body = _decode(response);
     return body['message'] as String;
   }
@@ -125,7 +136,7 @@ class ApiService {
       headers: await _headers(),
       body: jsonEncode({'email': email, 'password': password}),
     );
-    _throwIfError(response);
+    await _throwIfError(response);
     final body = _decode(response) as Map<String, dynamic>;
     await saveToken(body['token'] as String);
     return body;
@@ -141,7 +152,7 @@ class ApiService {
       headers: await _headers(),
       body: jsonEncode({'email': email}),
     );
-    _throwIfError(response);
+    await _throwIfError(response);
     final body = _decode(response);
     return body['message'] as String;
   }
@@ -154,9 +165,13 @@ class ApiService {
     final response = await http.post(
       _uri('/api/auth/reset-password'),
       headers: await _headers(),
-      body: jsonEncode({'email': email, 'code': code, 'newPassword': newPassword}),
+      body: jsonEncode({
+        'email': email,
+        'code': code,
+        'newPassword': newPassword,
+      }),
     );
-    _throwIfError(response);
+    await _throwIfError(response);
     final body = _decode(response);
     return body['message'] as String;
   }
@@ -164,8 +179,11 @@ class ApiService {
   // ---------------- SESSIONS ----------------
 
   Future<List<dynamic>> getSessions() async {
-    final response = await http.get(_uri('/api/sessions'), headers: await _headers(auth: true));
-    _throwIfError(response);
+    final response = await http.get(
+      _uri('/api/sessions'),
+      headers: await _headers(auth: true),
+    );
+    await _throwIfError(response);
     return _decode(response) as List<dynamic>;
   }
 
@@ -175,23 +193,29 @@ class ApiService {
       headers: await _headers(auth: true),
       body: jsonEncode(data),
     );
-    _throwIfError(response);
+    await _throwIfError(response);
     return _decode(response) as Map<String, dynamic>;
   }
 
-  Future<Map<String, dynamic>> updateSession(String id, Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> updateSession(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
     final response = await http.put(
       _uri('/api/sessions/$id'),
       headers: await _headers(auth: true),
       body: jsonEncode(data),
     );
-    _throwIfError(response);
+    await _throwIfError(response);
     return _decode(response) as Map<String, dynamic>;
   }
 
   Future<void> deleteSession(String id) async {
-    final response = await http.delete(_uri('/api/sessions/$id'), headers: await _headers(auth: true));
-    _throwIfError(response);
+    final response = await http.delete(
+      _uri('/api/sessions/$id'),
+      headers: await _headers(auth: true),
+    );
+    await _throwIfError(response);
   }
 
   Future<List<dynamic>> searchSessions(String query) async {
@@ -199,7 +223,20 @@ class ApiService {
       _uri('/api/sessions/search?q=${Uri.encodeQueryComponent(query)}'),
       headers: await _headers(auth: true),
     );
-    _throwIfError(response);
+    await _throwIfError(response);
     return _decode(response) as List<dynamic>;
+  }
+
+  Future<Map<String, dynamic>> analyzeSession({
+    required String title,
+    required String content,
+  }) async {
+    final response = await http.post(
+      _uri('/api/ai/analyze'),
+      headers: await _headers(auth: true),
+      body: jsonEncode({'title': title, 'content': content}),
+    );
+    await _throwIfError(response);
+    return _decode(response) as Map<String, dynamic>;
   }
 }

@@ -64,6 +64,22 @@ La base SQLite (`sessionhistory.db`) est créée automatiquement au premier
 démarrage. Swagger est disponible sur `https://localhost:xxxx/swagger`
 (le port exact s'affiche dans le terminal au lancement).
 
+### 5. Activer l'analyse IA Gemini
+
+La clé Gemini reste côté backend et n'est jamais intégrée dans l'application
+Flutter. Créez une clé depuis https://aistudio.google.com/apikey, puis
+enregistrez-la avec User Secrets :
+
+```bash
+dotnet user-secrets set "Gemini:ApiKey" "VOTRE_CLE_GEMINI"
+dotnet user-secrets set "Gemini:Model" "gemini-2.0-flash"
+```
+
+L'endpoint `POST /api/ai/analyze` est appelé lors de la saisie et de
+l'enregistrement d'une session. Il renvoie la catégorie, le résumé et les
+mots-clés. Sans clé configurée, l'application conserve le traitement local de
+secours et l'API renvoie `503`.
+
 ## Endpoints
 
 | Méthode | Route                       | Description                                  | Auth |
@@ -78,6 +94,7 @@ démarrage. Swagger est disponible sur `https://localhost:xxxx/swagger`
 | PUT     | `/api/sessions/{id}`          | Modifier une session                          | Oui  |
 | DELETE  | `/api/sessions/{id}`          | Supprimer une session                         | Oui  |
 | GET     | `/api/sessions/search?q=...`  | Recherche full-text                           | Oui  |
+| POST    | `/api/ai/analyze`             | Analyse Gemini de la session                  | Oui  |
 
 Pour les routes protégées, ajoutez l'en-tête :
 ```

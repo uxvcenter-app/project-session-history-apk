@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../core/messaging/app_messenger.dart';
+import '../core/theme/app_colors.dart';
 import '../models/session_model.dart';
 import '../services/api_service.dart';
 import '../services/ai_service.dart';
+import '../services/data_transfer_service.dart';
 import '../services/notification_service.dart';
 
 enum SessionFilter { all, favorites, category }
@@ -13,6 +15,7 @@ enum SessionFilter { all, favorites, category }
 /// au backend pour être stockées avec la session.
 class SessionProvider extends ChangeNotifier {
   final _api = ApiService.instance;
+  final _transfer = DataTransferService.instance;
   final _notifications = NotificationService.instance;
 
   List<SessionModel> _sessions = [];
@@ -27,15 +30,32 @@ class SessionProvider extends ChangeNotifier {
   List<SessionModel> get allSessions => List.unmodifiable(_sessions);
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  String? _aiErrorMessage;
+  String? get aiErrorMessage => _aiErrorMessage;
   int get totalCount => _sessions.length;
   int get favoritesCount => _sessions.where((s) => s.isFavorite).length;
 
-  List<SessionModel> get recentSessions => (_sessions.toList()
-        ..sort((a, b) => b.date.compareTo(a.date)))
-      .take(3)
-      .toList();
+  Future<Map<String, dynamic>?> analyzeDraft({
+    required String title,
+    required String content,
+  }) async {
+    if (title.trim().isEmpty && content.trim().isEmpty) return null;
+    try {
+      final result = await _api.analyzeSession(title: title, content: content);
+      _aiErrorMessage = null;
+      return result;
+    } catch (error) {
+      _aiErrorMessage = error.toString();
+      return null;
+    }
+  }
 
-  Future<void> loadSessions() async {
+  List<SessionModel> get recentSessions =>
+      (_sessions.toList()..sort((a, b) => b.date.compareTo(a.date)))
+          .take(4)
+          .toList();
+
+  Future<void> loadSessions({bool syncReminders = true}) async {
     _isLoading = true;
     notifyListeners();
     try {
@@ -45,14 +65,30 @@ class SessionProvider extends ChangeNotifier {
           .toList();
       _errorMessage = null;
       _applyFilters();
+      try {
+        await _transfer.saveLocalSessions(_sessions);
+      } catch (_) {}
 
       // Ne bloque jamais le chargement de l'application si le système
       // de notifications rencontre un problème.
-      try {
-        await _notifications.syncSessionReminders(_sessions);
-      } catch (_) {}
+      if (syncReminders) {
+        try {
+          await _notifications.syncSessionReminders(_sessions);
+        } catch (_) {}
+      }
     } catch (e) {
-      _errorMessage = e.toString();
+      try {
+        _sessions = await _transfer.loadLocalSessions();
+        _errorMessage = _sessions.isEmpty ? e.toString() : null;
+        _applyFilters();
+        if (syncReminders && _sessions.isNotEmpty) {
+          try {
+            await _notifications.syncSessionReminders(_sessions);
+          } catch (_) {}
+        }
+      } catch (_) {
+        _errorMessage = e.toString();
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -67,13 +103,20 @@ class SessionProvider extends ChangeNotifier {
     required String content,
     required List<String> tags,
   }) async {
-    final keywords = AiService.extractKeywords(content);
-    final summary = AiService.generateSummary(content);
+    final aiResult = await analyzeDraft(title: title, content: content);
+    final analyzedCategory = aiResult?['category'] as String?;
+    final keywords =
+        (aiResult?['keywords'] as List<dynamic>?)
+            ?.map((value) => value.toString())
+            .toList() ??
+        AiService.extractKeywords(content);
+    final summary =
+        aiResult?['summary'] as String? ?? AiService.generateSummary(content);
 
     final draft = SessionModel(
       id: '',
       title: title,
-      category: category,
+      category: analyzedCategory ?? category,
       date: date,
       time: time,
       content: content,
@@ -93,7 +136,11 @@ class SessionProvider extends ChangeNotifier {
       // Confirmation affichée dans l'application (pas de notification
       // système) : seul le rappel programmé ci-dessous en est une.
       try {
-        showAppMessage('« ${created.title} » a été ajoutée avec succès.');
+        showAppMessage(
+          '« ${created.title} » a été ajoutée avec succès.',
+          icon: Icons.check_circle_outline_rounded,
+          iconColor: AppColors.success,
+        );
       } catch (_) {}
       try {
         await _notifications.scheduleSessionReminder(
@@ -111,16 +158,39 @@ class SessionProvider extends ChangeNotifier {
   }
 
   Future<bool> updateSession(SessionModel session) async {
-    final keywords = AiService.extractKeywords(session.content);
-    final summary = AiService.generateSummary(session.content);
-    final updated =
-        session.copyWith(autoKeywords: keywords, autoSummary: summary);
+    final aiResult = await analyzeDraft(
+      title: session.title,
+      content: session.content,
+    );
+    final keywords =
+        (aiResult?['keywords'] as List<dynamic>?)
+            ?.map((value) => value.toString())
+            .toList() ??
+        AiService.extractKeywords(session.content);
+    final summary =
+        aiResult?['summary'] as String? ??
+        AiService.generateSummary(session.content);
+    final updated = session.copyWith(
+      category: aiResult?['category'] as String? ?? session.category,
+      autoKeywords: keywords,
+      autoSummary: summary,
+    );
 
     try {
-      final updatedJson =
-          await _api.updateSession(session.id, updated.toApiJson());
+      final updatedJson = await _api.updateSession(
+        session.id,
+        updated.toApiJson(),
+      );
       final saved = SessionModel.fromApiJson(updatedJson);
       await loadSessions();
+
+      try {
+        showAppMessage(
+          '« ${saved.title} » a été modifiée avec succès.',
+          icon: Icons.edit_outlined,
+          iconColor: AppColors.primary,
+        );
+      } catch (_) {}
 
       // Le même id de notification remplace automatiquement l'ancien rappel.
       try {
@@ -159,7 +229,11 @@ class SessionProvider extends ChangeNotifier {
       // système).
       if (deletedSession != null) {
         try {
-          showAppMessage('« ${deletedSession.title} » a été supprimée.');
+          showAppMessage(
+            '« ${deletedSession.title} » a été supprimée.',
+            icon: Icons.delete_outline_rounded,
+            iconColor: AppColors.error,
+          );
         } catch (_) {}
       }
 
@@ -201,10 +275,8 @@ class SessionProvider extends ChangeNotifier {
 
     if (_filter == SessionFilter.favorites) {
       result = result.where((s) => s.isFavorite).toList();
-    } else if (_filter == SessionFilter.category &&
-        _selectedCategory != null) {
-      result =
-          result.where((s) => s.category == _selectedCategory).toList();
+    } else if (_filter == SessionFilter.category && _selectedCategory != null) {
+      result = result.where((s) => s.category == _selectedCategory).toList();
     }
 
     if (_searchQuery.trim().isNotEmpty) {
@@ -238,13 +310,18 @@ class SessionProvider extends ChangeNotifier {
     final now = DateTime.now();
     final counts = List<int>.filled(7, 0);
     for (int i = 0; i < 7; i++) {
-      final day = DateTime(now.year, now.month, now.day)
-          .subtract(Duration(days: 6 - i));
+      final day = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(Duration(days: 6 - i));
       counts[i] = _sessions
-          .where((s) =>
-              s.date.year == day.year &&
-              s.date.month == day.month &&
-              s.date.day == day.day)
+          .where(
+            (s) =>
+                s.date.year == day.year &&
+                s.date.month == day.month &&
+                s.date.day == day.day,
+          )
           .length;
     }
     return counts;

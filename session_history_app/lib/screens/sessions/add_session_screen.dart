@@ -8,6 +8,7 @@ import '../../core/utils/time_format.dart';
 import '../../models/category_model.dart';
 import '../../providers/session_provider.dart';
 import '../../services/ai_service.dart';
+import '../../core/messaging/app_messenger.dart';
 import '../../widgets/category_badge.dart';
 
 /// Écran d'ajout de session avec classification IA 100% automatique :
@@ -30,14 +31,29 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
   String _category = 'others';
   bool _isDetecting = false;
   Timer? _debounce;
+  Timer? _clockTimer;
+  bool _timeWasChosen = false;
 
   DateTime _date = DateTime.now();
   TimeOfDay _time = TimeOfDay.now();
   bool _saving = false;
 
   @override
+  void initState() {
+    super.initState();
+    _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted || _timeWasChosen || !_isToday(_date)) return;
+      final now = TimeOfDay.now();
+      if (_time.hour != now.hour || _time.minute != now.minute) {
+        setState(() => _time = now);
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _debounce?.cancel();
+    _clockTimer?.cancel();
     _titleController.dispose();
     _contentController.dispose();
     _tagsController.dispose();
@@ -45,13 +61,26 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
   }
 
   Future<void> _pickDate() async {
+    final today = DateTime.now();
+    final todayOnly = DateTime(today.year, today.month, today.day);
     final picked = await showDatePicker(
       context: context,
       initialDate: _date,
-      firstDate: DateTime(2020),
+      firstDate: todayOnly,
       lastDate: DateTime(2100),
     );
-    if (picked != null) setState(() => _date = picked);
+    if (picked == null) return;
+
+    final pickedToday =
+        picked.year == today.year &&
+        picked.month == today.month &&
+        picked.day == today.day;
+    setState(() {
+      _date = picked;
+      if (pickedToday && !_timeWasChosen) {
+        _time = TimeOfDay.now();
+      }
+    });
   }
 
   Future<void> _pickTime() async {
@@ -60,15 +89,47 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
       initialTime: _time,
       builder: force24HourTimePicker,
     );
-    if (picked != null) setState(() => _time = picked);
+    if (picked == null) return;
+
+    final now = DateTime.now();
+    final pickedToday =
+        _date.year == now.year &&
+        _date.month == now.month &&
+        _date.day == now.day;
+    if (pickedToday && _timeIsBeforeNow(picked)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('L’heure ne peut pas être antérieure à maintenant.'),
+          ),
+        );
+      }
+      return;
+    }
+    setState(() {
+      _time = picked;
+      _timeWasChosen = true;
+    });
   }
 
-  /// Détection automatique déclenchée à chaque frappe, avec un petit délai
-  /// (debounce) pour ne pas relancer le calcul à chaque caractère et
-  /// donner une sensation naturelle d'"analyse" (visible via _isDetecting).
+  bool _isToday(DateTime date) {
+    final now = DateTime.now();
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
+  }
+
+  bool _timeIsBeforeNow(TimeOfDay time) {
+    final now = TimeOfDay.now();
+    return time.hour * 60 + time.minute < now.hour * 60 + now.minute;
+  }
+
+  /// Analyse distante déclenchée après une pause de frappe pour éviter
+  /// d'envoyer une requête Gemini à chaque caractère.
   void _onTextChanged() {
     _debounce?.cancel();
-    if (_titleController.text.trim().isEmpty && _contentController.text.trim().isEmpty) {
+    if (_titleController.text.trim().isEmpty &&
+        _contentController.text.trim().isEmpty) {
       setState(() {
         _category = 'others';
         _isDetecting = false;
@@ -76,11 +137,24 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
       return;
     }
     setState(() => _isDetecting = true);
-    _debounce = Timer(const Duration(milliseconds: 450), () {
+    _debounce = Timer(const Duration(milliseconds: 700), () async {
       if (!mounted) return;
-      final suggestion = AiService.suggestCategory(_titleController.text, _contentController.text);
+      final title = _titleController.text;
+      final content = _contentController.text;
+      final provider = context.read<SessionProvider>();
+      final result = await provider.analyzeDraft(
+        title: title,
+        content: content,
+      );
+      if (!mounted ||
+          title != _titleController.text ||
+          content != _contentController.text) {
+        return;
+      }
       setState(() {
-        _category = suggestion;
+        _category =
+            result?['category'] as String? ??
+            AiService.suggestCategory(title, content);
         _isDetecting = false;
       });
     });
@@ -88,6 +162,23 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    final now = DateTime.now();
+    if (!_timeWasChosen && _isToday(_date)) {
+      _time = TimeOfDay.fromDateTime(now);
+    }
+    final selectedDateTime = DateTime(
+      _date.year,
+      _date.month,
+      _date.day,
+      _time.hour,
+      _time.minute,
+    );
+    if (selectedDateTime.isBefore(now)) {
+      showAppMessage(
+        'La date et l’heure doivent être maintenant ou dans le futur.',
+      );
+      return;
+    }
     setState(() => _saving = true);
 
     final tags = _tagsController.text
@@ -111,8 +202,8 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
     if (success) {
       Navigator.of(context).pop();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(provider.errorMessage ?? 'Impossible de contacter le serveur')),
+      showAppMessage(
+        provider.errorMessage ?? 'Impossible de contacter le serveur',
       );
     }
   }
@@ -124,7 +215,10 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         elevation: 0,
-        title: const Text('Add Session', style: TextStyle(fontWeight: FontWeight.w700)),
+        title: const Text(
+          'Add Session',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -142,11 +236,19 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
                     duration: const Duration(milliseconds: 200),
                     child: _saving
                         ? const SizedBox(
-                      key: ValueKey('saving'),
-                      width: 18, height: 18,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                    )
-                        : const Icon(Icons.check_rounded, key: ValueKey('check'), size: 20),
+                            key: ValueKey('saving'),
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.check_rounded,
+                            key: ValueKey('check'),
+                            size: 20,
+                          ),
                   ),
                   onPressed: _saving ? null : _save,
                 ),
@@ -165,14 +267,18 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
             _card(
               child: TextFormField(
                 controller: _titleController,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
                 decoration: const InputDecoration(
                   hintText: 'Enter title',
                   border: InputBorder.none,
                   isDense: true,
                 ),
                 onChanged: (_) => _onTextChanged(),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Titre requis' : null,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Titre requis' : null,
               ),
             ),
             const SizedBox(height: 20),
@@ -181,17 +287,27 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
             // l'utilisateur, avec un badge animé (fondu + léger scale).
             Row(
               children: [
-                Icon(Icons.auto_awesome_rounded, size: 15, color: AppColors.primary),
+                Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 15,
+                  color: AppColors.primary,
+                ),
                 const SizedBox(width: 6),
-                const Text('Catégorie détectée par l\'IA',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+                const Text(
+                  'Catégorie détectée par l\'IA',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                ),
                 const SizedBox(width: 8),
                 AnimatedOpacity(
                   opacity: _isDetecting ? 1 : 0,
                   duration: const Duration(milliseconds: 150),
                   child: SizedBox(
-                    width: 12, height: 12,
-                    child: CircularProgressIndicator(strokeWidth: 1.6, color: AppColors.primary),
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.6,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
               ],
@@ -216,7 +332,10 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
                   transitionBuilder: (child, animation) => ScaleTransition(
-                    scale: CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+                    scale: CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutBack,
+                    ),
                     child: FadeTransition(opacity: animation, child: child),
                   ),
                   child: CategoryBadge(
@@ -240,12 +359,19 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
                         onTap: _pickDate,
                         child: Row(
                           children: [
-                            Icon(Icons.calendar_today_rounded, size: 16, color: AppColors.primary),
+                            Icon(
+                              Icons.calendar_today_rounded,
+                              size: 16,
+                              color: AppColors.primary,
+                            ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
                                 DateFormat('dd/MM/yyyy').format(_date),
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ],
@@ -265,12 +391,19 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
                         onTap: _pickTime,
                         child: Row(
                           children: [
-                            Icon(Icons.access_time_rounded, size: 16, color: AppColors.primary),
+                            Icon(
+                              Icons.access_time_rounded,
+                              size: 16,
+                              color: AppColors.primary,
+                            ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
                                 formatTime24(_time),
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ],
@@ -287,18 +420,27 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                ),
               ),
               child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.notifications_active_outlined,
-                      color: AppColors.primary, size: 20),
+                  Icon(
+                    Icons.notifications_active_outlined,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Un rappel sera envoyé automatiquement à la date et à l’heure choisies.',
-                      style: TextStyle(fontSize: 12.5, height: 1.4, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        height: 1.4,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],
@@ -319,7 +461,8 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
                   isDense: true,
                 ),
                 onChanged: (_) => _onTextChanged(),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Contenu requis' : null,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Contenu requis' : null,
               ),
             ),
             const SizedBox(height: 20),
@@ -347,7 +490,11 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
   Widget _sectionLabel(String text) {
     return Text(
       text,
-      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, letterSpacing: -0.1),
+      style: const TextStyle(
+        fontWeight: FontWeight.w700,
+        fontSize: 13.5,
+        letterSpacing: -0.1,
+      ),
     );
   }
 

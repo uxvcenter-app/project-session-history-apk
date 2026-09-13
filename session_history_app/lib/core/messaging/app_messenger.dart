@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_colors.dart';
 
 /// Clé globale du [ScaffoldMessenger] de l'application.
 ///
@@ -11,14 +12,35 @@ import 'package:flutter/material.dart';
 final GlobalKey<ScaffoldMessengerState> appMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
 
-/// Affiche un simple message en bas de l'écran (SnackBar), à ne pas
+/// Affiche un message en haut de l'écran, à ne pas
 /// confondre avec une notification système : il n'apparaît que si
 /// l'application est ouverte, et disparaît tout seul après quelques
 /// secondes.
-void showAppMessage(String message) {
+void showAppMessage(
+  String message, {
+  IconData icon = Icons.error_outline_rounded,
+  Color iconColor = AppColors.error,
+}) {
   final messenger = appMessengerKey.currentState;
   if (messenger == null) return;
   messenger
-    ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(message)));
+    ..hideCurrentMaterialBanner()
+    ..showMaterialBanner(
+      MaterialBanner(
+        content: Text(message),
+        leading: Icon(icon, color: iconColor),
+        backgroundColor: Colors.white,
+        elevation: 4,
+        actions: [
+          TextButton(
+            onPressed: messenger.hideCurrentMaterialBanner,
+            child: const Text('Fermer'),
+          ),
+        ],
+      ),
+    );
+
+  Future<void>.delayed(const Duration(seconds: 4), () {
+    messenger.hideCurrentMaterialBanner();
+  });
 }

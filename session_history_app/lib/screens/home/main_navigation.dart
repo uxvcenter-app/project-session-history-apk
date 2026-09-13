@@ -19,12 +19,16 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _index = 0;
 
-  final _screens = const [
-    HomeScreen(),
-    SearchScreen(),
-    StatisticsScreen(),
-    SettingsScreen(),
+  late final List<Widget> _screens = [
+    const HomeScreen(),
+    SearchScreen(onBack: _showHome),
+    StatisticsScreen(onBack: _showHome),
+    SettingsScreen(onBack: _showHome),
   ];
+
+  void _showHome() {
+    if (mounted) setState(() => _index = 0);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,9 +37,9 @@ class _MainNavigationState extends State<MainNavigation> {
       floatingActionButton: _index == 0
           ? FloatingActionButton(
               backgroundColor: AppColors.primary,
-              onPressed: () => Navigator.of(context).push(
-                AppRoute(const AddSessionScreen()),
-              ),
+              onPressed: () => Navigator.of(
+                context,
+              ).push(AppRoute(const AddSessionScreen())),
               child: const Icon(Icons.add, color: Colors.white),
             )
           : null,
@@ -66,14 +70,19 @@ class _MainNavigationState extends State<MainNavigation> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(selected ? filled : outline,
-              color: selected ? AppColors.primary : AppColors.textSecondary, size: 24),
+          Icon(
+            selected ? filled : outline,
+            color: selected ? AppColors.primary : AppColors.textSecondary,
+            size: 24,
+          ),
           const SizedBox(height: 2),
-          Text(label,
-              style: TextStyle(
-                fontSize: 11,
-                color: selected ? AppColors.primary : AppColors.textSecondary,
-              )),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: selected ? AppColors.primary : AppColors.textSecondary,
+            ),
+          ),
         ],
       ),
     );

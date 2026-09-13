@@ -7,6 +7,7 @@ import '../../core/utils/time_format.dart';
 import '../../models/category_model.dart';
 import '../../models/session_model.dart';
 import '../../providers/session_provider.dart';
+import '../../core/messaging/app_messenger.dart';
 
 class EditSessionScreen extends StatefulWidget {
   final SessionModel session;
@@ -39,12 +40,10 @@ class _EditSessionScreenState extends State<EditSessionScreen> {
     _time = _parseStoredTime(s.time);
   }
 
-
   TimeOfDay _parseStoredTime(String value) {
     final raw = value.trim().toUpperCase();
 
-    final twelveHour =
-        RegExp(r'^(\d{1,2}):(\d{2})\s*(AM|PM)$').firstMatch(raw);
+    final twelveHour = RegExp(r'^(\d{1,2}):(\d{2})\s*(AM|PM)$').firstMatch(raw);
     if (twelveHour != null) {
       var hour = int.tryParse(twelveHour.group(1)!) ?? 0;
       final minute = int.tryParse(twelveHour.group(2)!) ?? 0;
@@ -57,8 +56,7 @@ class _EditSessionScreenState extends State<EditSessionScreen> {
       );
     }
 
-    final twentyFourHour =
-        RegExp(r'^(\d{1,2}):(\d{2})$').firstMatch(raw);
+    final twentyFourHour = RegExp(r'^(\d{1,2}):(\d{2})$').firstMatch(raw);
     if (twentyFourHour != null) {
       final hour = int.tryParse(twentyFourHour.group(1)!) ?? 0;
       final minute = int.tryParse(twentyFourHour.group(2)!) ?? 0;
@@ -116,8 +114,8 @@ class _EditSessionScreenState extends State<EditSessionScreen> {
     if (success) {
       Navigator.of(context).pop();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(provider.errorMessage ?? 'Impossible de contacter le serveur')),
+      showAppMessage(
+        provider.errorMessage ?? 'Impossible de contacter le serveur',
       );
     }
   }
@@ -133,8 +131,12 @@ class _EditSessionScreenState extends State<EditSessionScreen> {
           IconButton(
             icon: _saving
                 ? const SizedBox(
-                    width: 20, height: 20,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
                   )
                 : const Icon(Icons.check),
             onPressed: _saving ? null : _save,
@@ -150,23 +152,31 @@ class _EditSessionScreenState extends State<EditSessionScreen> {
             const SizedBox(height: 8),
             TextFormField(
               controller: _titleController,
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Titre requis' : null,
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? 'Titre requis' : null,
             ),
             const SizedBox(height: 18),
 
-            const Text('Category', style: TextStyle(fontWeight: FontWeight.w600)),
+            const Text(
+              'Category',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               initialValue: _category,
               items: CategoryModel.defaults
-                  .map((c) => DropdownMenuItem(
-                        value: c.id,
-                        child: Row(children: [
+                  .map(
+                    (c) => DropdownMenuItem(
+                      value: c.id,
+                      child: Row(
+                        children: [
                           Icon(c.icon, color: c.color, size: 18),
                           const SizedBox(width: 8),
                           Text(c.name),
-                        ]),
-                      ))
+                        ],
+                      ),
+                    ),
+                  )
                   .toList(),
               onChanged: (v) => setState(() => _category = v ?? _category),
             ),
@@ -178,7 +188,10 @@ class _EditSessionScreenState extends State<EditSessionScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Date', style: TextStyle(fontWeight: FontWeight.w600)),
+                      const Text(
+                        'Date',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
                       const SizedBox(height: 8),
                       InkWell(
                         onTap: _pickDate,
@@ -195,7 +208,10 @@ class _EditSessionScreenState extends State<EditSessionScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Time', style: TextStyle(fontWeight: FontWeight.w600)),
+                      const Text(
+                        'Time',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
                       const SizedBox(height: 8),
                       InkWell(
                         onTap: _pickTime,
@@ -211,16 +227,23 @@ class _EditSessionScreenState extends State<EditSessionScreen> {
             ),
             const SizedBox(height: 18),
 
-            const Text('Content', style: TextStyle(fontWeight: FontWeight.w600)),
+            const Text(
+              'Content',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 8),
             TextFormField(
               controller: _contentController,
               maxLines: 6,
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Contenu requis' : null,
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? 'Contenu requis' : null,
             ),
             const SizedBox(height: 18),
 
-            const Text('Tags/Keywords (comma separated)', style: TextStyle(fontWeight: FontWeight.w600)),
+            const Text(
+              'Tags/Keywords (comma separated)',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 8),
             TextFormField(controller: _tagsController),
             const SizedBox(height: 30),

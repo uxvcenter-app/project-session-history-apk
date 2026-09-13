@@ -15,7 +15,7 @@ class AppTheme {
         error: AppColors.error,
         surface: AppColors.surface,
       ),
-      textTheme: GoogleFonts.poppinsTextTheme(base.textTheme).apply(
+      textTheme: GoogleFonts.manropeTextTheme(base.textTheme).apply(
         bodyColor: AppColors.textPrimary,
         displayColor: AppColors.textPrimary,
       ),
@@ -24,7 +24,7 @@ class AppTheme {
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.poppins(
+        titleTextStyle: GoogleFonts.manrope(
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: Colors.white,
@@ -33,8 +33,10 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surface,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: AppColors.border),
@@ -57,7 +59,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: GoogleFonts.poppins(
+          textStyle: GoogleFonts.manrope(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -93,7 +95,7 @@ class AppTheme {
         error: AppColors.error,
         surface: AppColors.darkSurface,
       ),
-      textTheme: GoogleFonts.poppinsTextTheme(base.textTheme).apply(
+      textTheme: GoogleFonts.manropeTextTheme(base.textTheme).apply(
         bodyColor: AppColors.darkTextPrimary,
         displayColor: AppColors.darkTextPrimary,
       ),
@@ -102,7 +104,7 @@ class AppTheme {
         foregroundColor: AppColors.darkTextPrimary,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.poppins(
+        titleTextStyle: GoogleFonts.manrope(
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: AppColors.darkTextPrimary,
@@ -111,8 +113,10 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.darkSurface,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.darkBorder),
@@ -123,7 +127,10 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.primaryLight, width: 1.6),
+          borderSide: const BorderSide(
+            color: AppColors.primaryLight,
+            width: 1.6,
+          ),
         ),
         hintStyle: const TextStyle(color: AppColors.darkTextSecondary),
       ),
@@ -135,7 +142,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: GoogleFonts.poppins(
+          textStyle: GoogleFonts.manrope(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
